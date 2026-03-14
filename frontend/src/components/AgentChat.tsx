@@ -7,13 +7,29 @@ import { Input } from './ui/input';
 import { Loader2, Send, Bot, User, TrendingUp, BarChart2, PieChart, LineChart, Plus, Trash2, MessageSquare, Copy, Search, Globe } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { chatWithAgent, chatWithAgentStream, getAgentSessions, getAgentSessionHistory, deleteAgentSession, searchWeb, executeAgentTool } from '@/lib/api';
-import { getAvailableModels } from '@/lib/api';
+import { getAvailableModels, getAgentTools } from '@/lib/api';
+import McpStatus from './McpStatus';
 import ReactMarkdown from 'react-markdown';
 import { ScrollArea } from './ui/scroll-area';
 import { format } from 'date-fns';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { AgentMessageDisplay } from './chat/AgentMessageDisplay';
+
+interface McpTool {
+  name: string;
+  llm_name: string;
+  description: string;
+  full_name: string;
+}
+
+interface McpServer {
+  id: string;
+  base_url: string;
+  connected: boolean;
+  tool_count: number;
+  tools: McpTool[];
+}
 
 const generateId = (): string => {
   try {
@@ -185,6 +201,10 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState<Message | null>(null);
   const [model, setModel] = useState<string | null>(null);
   const [availableModels, setAvailableModels] = useState<{value: string, label: string}[]>([{ value: '', label: '默认模型' }]);
+  
+  // MCP 状态
+  const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
+  const [mcpEnabled, setMcpEnabled] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
@@ -198,17 +218,46 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
     })();
   }, []);
   
+  // 加载 MCP 服务器信息
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    (async () => {
+      try {
+        const res = await getAgentTools();
+        if (res.success && res.data) {
+          setMcpServers(res.data.mcp_servers || []);
+          setMcpEnabled(res.data.mcp_enabled || false);
+        }
+      } catch (error) {
+        console.error('获取 MCP 信息失败:', error);
+      }
+    })();
+  }, [isAuthenticated]);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
   // 初始消息
   useEffect(() => {
     if (messages.length === 0) {
+      // 构建功能列表
+      const features = [
+        '查询股票价格、历史走势',
+        '获取财务指标和公司信息',
+        mcpEnabled && mcpServers.length > 0 
+          ? `MCP工具调用（已连接 ${mcpServers.length} 个服务器，共 ${mcpServers.reduce((sum, s) => sum + s.tool_count, 0)} 个工具）`
+          : 'MCP工具调用（浏览器自动化、网络搜索等）',
+        '网络搜索（需要2000积分）'
+      ].filter(Boolean);
+      
+      const featuresText = features.map(f => `- ${f}`).join('\n');
+      
       setMessages([
         {
           id: '1',
           role: 'assistant',
-          content: '我是AlphaBot智能助手，您的专业股票分析专家。\n\n我能帮您分析市场趋势、评估个股表现、比较不同公司财务状况，并提供基于AI的量化分析。有什么可以帮到您的？',
+          content: `我是AlphaBot智能助手，您的专业股票分析专家。\n\n我能帮您分析市场趋势、评估个股表现、比较不同公司财务状况，并提供基于AI的量化分析。\n\n🔧 **我还支持以下功能：**\n${featuresText}\n\n有什么可以帮到您的？`,
           timestamp: new Date()
         }
       ]);
@@ -218,7 +267,7 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
-  }, [messages.length]);
+  }, [messages.length, mcpEnabled, mcpServers]);
 
   // 加载会话列表
   const loadSessionList = useCallback(async () => {
@@ -949,6 +998,9 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
                 <span className="text-xs">流式传输</span>
               </Button>
             </div>
+            
+            {/* MCP 状态 */}
+            <McpStatus servers={mcpServers} enabled={mcpEnabled} />
           </div>
         </div>
 
