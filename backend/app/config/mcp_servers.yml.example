@@ -1,0 +1,74 @@
+# MCP servers configuration (AlphaBot as MCP host)
+#
+# AlphaBot 可以作为 MCP Host，连接多个外部 MCP 服务器
+# 支持任何符合 MCP HTTP JSON-RPC 规范的服务器
+#
+# 配置说明：
+# - id: 服务器的唯一标识（只能包含字母、数字、下划线、中划线）
+# - base_url: MCP 服务器的 HTTP 端点 URL（必须以 /mcp 结尾）
+# - api_key: 可选，如果服务器需要认证
+#
+# 环境变量支持：
+# - 支持 ${ENV_VAR} 语法，会从环境变量读取值
+# - 示例：base_url: ${MY_MCP_URL}
+#
+# 多种 MCP 服务器示例：
+
+servers:
+  # ============================================
+  # 示例 1: 本地 mcporter-bridge（如果你安装了 mcporter）
+  # 用于访问小红书、抖音等社交媒体 MCP 工具
+  # --------------------------------------------
+  # - id: mcporter_bridge
+  #   base_url: http://host.docker.internal:8765/mcp
+  #   # api_key: 如果需要认证
+  #
+  # 注意：host.docker.internal 在 Docker Desktop 中指向宿主机
+  # Linux 用户可能需要使用宿主机的实际 IP 地址
+
+  # ============================================
+  # 示例 2: Playwright 浏览器自动化
+  # 用于网页截图、自动化测试等
+  # --------------------------------------------
+  # - id: playwright
+  #   base_url: http://playwright-mcp:3000/mcp
+
+  # ============================================
+  # 示例 3: 远程 MCP 服务器（需要认证）
+  # --------------------------------------------
+  # - id: notion
+  #   base_url: https://mcp.notion.com/mcp
+  #   api_key: ${NOTION_API_KEY}
+
+  # ============================================
+  # 示例 4: 另一个 AlphaBot 实例（分布式场景）
+  # --------------------------------------------
+  # - id: alphabot_remote
+  #   base_url: http://192.168.1.100:8765/mcp
+
+  # ============================================
+  # 添加你自己的 MCP 服务器...
+  # --------------------------------------------
+  # - id: my_custom_mcp
+  #   base_url: ${MY_MCP_BASE_URL}
+  #   api_key: ${MY_MCP_API_KEY}
+
+# ================================================
+# 快速开始指南
+# ================================================
+#
+# 1. 复制此文件为 mcp_servers.yml：
+#    cp mcp_servers.yml.example mcp_servers.yml
+#
+# 2. 取消注释你想要使用的服务器配置
+#
+# 3. 如果使用 Docker，确保容器能访问 MCP 服务器地址：
+#    - 宿主机上的 MCP：使用 host.docker.internal (macOS/Windows)
+#      或宿主机的实际 IP 地址
+#    - 其他容器：使用容器名作为主机名
+#
+# 4. 重启 AlphaBot 后端服务
+#
+# 5. 验证连接：
+#    curl http://localhost:8888/api/v1/agent/tools
+#    应该返回所有可用的 MCP 工具列表

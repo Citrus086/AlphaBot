@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# AlphaBot + MCP 启动器 for macOS
+# 这个脚本会在终端中运行启动脚本，并保持窗口打开
+
+APP_NAME="AlphaBot with MCP"
+SCRIPT_PATH="/Users/mima0000/alphabot/start-with-mcp.sh"
+
+# 从 .env 读取端口
+eval $(grep -E "^(BACKEND_PORT|FRONTEND_PORT)=" "/Users/mima0000/alphabot/.env" 2>/dev/null)
+FRONTEND_PORT=${FRONTEND_PORT:-8889}
+BACKEND_PORT=${BACKEND_PORT:-8888}
+
+# 检查脚本是否存在
+if [ ! -f "$SCRIPT_PATH" ]; then
+    osascript -e "display dialog \"启动脚本不存在: $SCRIPT_PATH\" buttons {\"确定\"} default button \"确定\" with icon stop"
+    exit 1
+fi
+
+# 构建提示信息
+COMPLETION_MSG="启动完成！如果浏览器没有自动打开，请访问:
+前端: http://localhost:$FRONTEND_PORT
+API文档: http://localhost:$BACKEND_PORT/api/v1/docs
+
+按回车键关闭此窗口..."
+
+# 启动终端并保持打开
+osascript <<EOF
+tell application "Terminal"
+    activate
+    set windowId to do script "cd /Users/mima0000/alphabot && ./start-with-mcp.sh start; echo ''; echo '========================================'; echo '$COMPLETION_MSG'; read"
+    set custom title of front window to "AlphaBot + MCP 启动中..."
+end tell
+EOF
+
+# 显示通知
+osascript -e "display notification \"正在后台启动 AlphaBot 和 MCP，请查看终端窗口\" with title \"$APP_NAME\""

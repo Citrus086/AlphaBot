@@ -43,11 +43,11 @@ check_docker() {
 # 检查环境文件
 check_env_file() {
     print_message "检查环境配置文件..."
-    if [ ! -f "./backend/.env" ]; then
-        print_warning "未找到 backend/.env 文件，将从示例文件创建"
-        if [ -f "./backend/.env.example" ]; then
-            cp ./backend/.env.example ./backend/.env
-            print_message "已从示例文件创建 .env 文件，请编辑 ./backend/.env 文件配置您的环境变量"
+    if [ ! -f "./.env" ]; then
+        print_warning "未找到 .env 文件，将从示例文件创建"
+        if [ -f "./.env.example" ]; then
+            cp ./.env.example ./.env
+            print_message "已从示例文件创建 .env 文件，请编辑 ./.env 文件配置您的环境变量"
         else
             print_error "未找到 .env.example 文件，请手动创建 .env 文件"
             exit 1
@@ -71,7 +71,7 @@ train_ml_model() {
         else
             print_error "模型训练失败，将使用规则分析模式"
             # 确保 .env 文件中使用规则分析模式
-            sed -i 's/DEFAULT_ANALYSIS_MODE=.*/DEFAULT_ANALYSIS_MODE="rule"/' ./backend/.env
+            sed -i 's/DEFAULT_ANALYSIS_MODE=.*/DEFAULT_ANALYSIS_MODE="rule"/' ./.env
         fi
     else
         print_message "预训练模型已存在 ✓"
