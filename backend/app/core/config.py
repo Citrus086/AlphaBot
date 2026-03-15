@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 from dotenv import load_dotenv
 from typing import List, Literal
@@ -51,16 +51,23 @@ class Settings(BaseSettings):
     BING_SEARCH_BASE_URL: str = os.getenv("BING_SEARCH_BASE_URL", "https://api.bing.microsoft.com/v7.0/search")
     
     # CORS配置 - 允许本地开发和Docker环境
-    CORS_ORIGINS: list = [
-        "http://localhost:3000",  # 本地开发环境
-        "http://localhost:8000",  # 本地后端
-        "http://frontend:3000",   # Docker环境中的前端服务
-        "http://backend:8000",    # Docker环境中的后端服务
-        "*",                      # 允许所有来源（仅用于测试，生产环境应移除）
-    ]
+    # 生产环境应通过环境变量 CORS_ORIGINS 配置，多个域名用逗号分隔
+    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000,http://frontend:3000,http://backend:8000")
+    
+    @property
+    def cors_origins_list(self) -> list:
+        """获取CORS起源列表"""
+        if isinstance(self.CORS_ORIGINS, list):
+            return self.CORS_ORIGINS
+        return self.CORS_ORIGINS.split(",") if self.CORS_ORIGINS else []
     
     # 安全配置
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-for-development-only")
+    
+    # 管理员账户配置（用于初始化）
+    ADMIN_USERNAME: str = os.getenv("ADMIN_USERNAME", "admin")
+    ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "admin@example.com")
+    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
     
     # AI分析配置（Phase 5 AnalysisModeRegistry）
     # 可选值: "rule", "ml", "llm"
@@ -138,9 +145,12 @@ class Settings(BaseSettings):
     TRENDRADAR_MCP_HTTP_URL: str = os.getenv("TRENDRADAR_MCP_HTTP_URL", "")
     TRENDRADAR_MCP_API_KEY: str = os.getenv("TRENDRADAR_MCP_API_KEY", "")
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    # Pydantic v2 配置
+    model_config = SettingsConfigDict(
+        extra='ignore',  # 忽略未定义的环境变量
+        env_file='../../.env',  # 相对于当前文件的路径 (backend/app/core/ → 项目根目录)
+        case_sensitive=True
+    )
 
 # 创建全局设置对象
 settings = Settings() 

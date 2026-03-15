@@ -31,13 +31,10 @@ COPY --chown=appuser:appuser . .
 # 创建模型目录并设置权限
 RUN mkdir -p /app/models && chown -R appuser:appuser /app/models
 
-# 设置环境变量
+# 设置环境变量（敏感配置应从 .env 文件或环境变量传入）
 ENV PYTHONPATH=/app \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    ADMIN_USERNAME=admin \
-    ADMIN_EMAIL=admin@example.com \
-    ADMIN_PASSWORD=admin123
+    PYTHONUNBUFFERED=1
 
 # 切换到非 root 用户
 USER appuser

@@ -9,11 +9,13 @@ services:
     container_name: alphabot-backend
     restart: always
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8888}:8000"
     user: ${UID}:${GID}
     volumes:
       - ./backend:/app
       - ./backend/models:/app/models
+    env_file:
+      - ./.env
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -29,7 +31,7 @@ services:
     container_name: alphabot-redis
     restart: always
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -63,7 +65,7 @@ services:
     container_name: alphabot-frontend
     restart: always
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-8889}:3000"
     environment:
       - NEXT_PUBLIC_API_URL=/api/v1
     depends_on:

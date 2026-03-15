@@ -17,7 +17,7 @@ const nextConfig = {
     // 在开发环境中使用localhost，在生产环境中使用Docker服务名
     const apiDestination = isProduction 
       ? 'http://backend:8000/api/:path*'  // Docker环境
-      : 'http://localhost:8000/api/:path*'; // 本地开发环境
+      : 'http://localhost:8888/api/:path*'; // 本地开发环境
     
     console.log(`Next.js rewrites: Environment=${nodeEnv}, API destination=${apiDestination}`);
     

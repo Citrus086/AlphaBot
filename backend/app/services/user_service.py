@@ -6,9 +6,10 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from app.models.user import User
 from app.services.invite_service import InviteService
+from app.core.config import settings
 
-# JWT相关配置
-SECRET_KEY = "your-secret-key"  # 在生产环境中应该使用环境变量
+# JWT相关配置 - 从环境变量读取
+SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24小时
 

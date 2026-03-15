@@ -19,6 +19,7 @@ from app.api.dependencies import check_web_search_limit, check_usage_limit
 from app.core.config import settings
 from app.channels.base import ChannelMessage
 from app.services.llm_registry import LLMRegistry
+from app.core.mcp_host import McpHostRegistry
 
 router = APIRouter()
 
@@ -301,9 +302,49 @@ async def get_agent_tools(
         all_tools = [tool.model_dump() for tool in static_tools]
         for tool in dynamic_tools:
             all_tools.append(tool)
+        
+        # 获取 MCP 服务器信息
+        mcp_servers = []
+        try:
+            # 确保已加载配置
+            if not McpHostRegistry._initialized:
+                McpHostRegistry.load_from_file()
+            
+            # 获取所有已发现的工具
+            all_mcp_tools = McpHostRegistry.list_tools()
+            
+            # 按服务器分组整理工具
+            server_tools_map = {}
+            for full_name, entry in all_mcp_tools.items():
+                server_id = entry.get("server_id")
+                if server_id not in server_tools_map:
+                    server_tools_map[server_id] = []
+                tool_def = entry.get("tool") or {}
+                server_tools_map[server_id].append({
+                    "name": tool_def.get("name", full_name),
+                    "llm_name": entry.get("llm_name", full_name),
+                    "description": tool_def.get("description", ""),
+                    "full_name": full_name
+                })
+            
+            # 构建服务器列表
+            for server_id, server in McpHostRegistry._servers.items():
+                tools = server_tools_map.get(server_id, [])
+                mcp_servers.append({
+                    "id": server_id,
+                    "base_url": server.base_url,
+                    "connected": len(tools) > 0,
+                    "tool_count": len(tools),
+                    "tools": tools
+                })
+        except Exception as mcp_error:
+            # MCP 信息获取失败不影响主功能
+            pass
             
         return api_response(data={
-            "tools": all_tools
+            "tools": all_tools,
+            "mcp_servers": mcp_servers,
+            "mcp_enabled": len(mcp_servers) > 0
         })
     except Exception as e:
         return api_response(
