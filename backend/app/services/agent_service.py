@@ -23,6 +23,10 @@ from app.core.config import settings
 from app.core.registries import ToolRegistry
 from app.core.mcp_host import McpHostRegistry
 from app.channels.base import ChannelMessage, ChannelReply
+from contextvars import ContextVar
+
+# 上下文变量：是否启用 MCP
+enable_mcp_var: ContextVar[bool] = ContextVar('enable_mcp', default=True)
 from app.channels.config import get_channel_config
 from app.skills.definitions import SKILL_DEFINITIONS
 from app.skills.registry import SkillRegistry
@@ -394,11 +398,15 @@ class AgentService:
         db: Session,
         user: User,
         enable_web_search: bool = False,
+        enable_mcp: bool = True,
         model: Optional[str] = None,
         forced_role: Optional[str] = None,
         notify_channel: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """处理用户消息"""
+        # 设置 MCP 启用状态到上下文
+        token = enable_mcp_var.set(enable_mcp)
+        
         try:
             # 检查是否是特殊命令（例如 "/search 查询内容"）
             if user_message.startswith("/search "):
@@ -417,7 +425,7 @@ class AgentService:
                         "session_id": session_id
                     }
                 
-                search_results = await search_service.search(search_query, 5)
+                search_results = await search_service.search(search_query, 5, enable_mcp)
                 # 格式化搜索结果
                 formatted_result = await cls._format_tool_result_for_display("search_web", {
                     "query": search_query,
@@ -504,9 +512,14 @@ class AgentService:
             all_tools = cls.get_available_tools()
             allowed_tool_names = set(role_cfg.tool_names or [])
             
-            # 2.1 为当前角色选择允许使用的工具集合
-            all_tools = cls.get_available_tools()
-            allowed_tool_names = set(role_cfg.tool_names or [])
+            # 如果未启用联网搜索，从可用工具中移除 search_web
+            if not enable_web_search:
+                allowed_tool_names.discard("search_web")
+            
+            # 如果未启用 MCP，过滤掉 MCP 工具
+            if not enable_mcp:
+                all_tools = [t for t in all_tools if "mcporter" not in t.name]
+            
             tools_for_llm = [t for t in all_tools if t.name in allowed_tool_names] or all_tools
 
             # 3. 迭代式工具调用与回复生成循环
@@ -613,6 +626,9 @@ class AgentService:
                 "session_id": session_id,
                 "error": str(e)
             }
+        finally:
+            # 重置上下文变量
+            enable_mcp_var.reset(token)
     
     @classmethod
     def _build_messages(
@@ -792,8 +808,9 @@ class AgentService:
                 limit = function_args.get("limit", 5)
                 
                 try:
-                    # 执行搜索
-                    search_results = await search_service.search(query, limit)
+                    # 执行搜索，使用上下文中的 enable_mcp 设置
+                    enable_mcp = enable_mcp_var.get()
+                    search_results = await search_service.search(query, limit, enable_mcp)
                     
                     # 格式化结果为代理可读的格式
                     if search_results.get("success", False):
@@ -876,6 +893,7 @@ class AgentService:
         db: Session,
         user: User,
         enable_web_search: bool = False,
+        enable_mcp: bool = True,
         model: Optional[str] = None,
     ) -> ChannelReply:
         """
@@ -910,6 +928,7 @@ class AgentService:
             db=db,
             user=user,
             enable_web_search=enable_web_search,
+            enable_mcp=enable_mcp,
             model=model,
             forced_role=forced_role,
             notify_channel=notify_channel,

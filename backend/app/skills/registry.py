@@ -17,6 +17,7 @@ from app.services.user_service import UserService
 from app.services.backtest_service import BacktestService
 from app.services.sim_trade_service import SimTradeService
 from app.services.notification_service import send_channel_message
+from app.services.agent_service import enable_mcp_var
 
 SkillHandler = Callable[[Dict[str, Any], Session, User], Awaitable[Dict[str, Any]]]
 
@@ -461,7 +462,9 @@ async def _handle_search_web(
     if not settings.SEARCH_API_ENABLED:
         return {"error": "搜索API未启用"}
 
-    search_results = await search_service.search(query, limit)
+    # 从上下文获取是否启用 MCP
+    enable_mcp = enable_mcp_var.get()
+    search_results = await search_service.search(query, limit, enable_mcp)
 
     if search_results.get("success", False):
         return {

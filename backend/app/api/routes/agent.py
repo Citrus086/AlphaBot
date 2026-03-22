@@ -28,6 +28,7 @@ class AgentMessageRequest(BaseModel):
     content: str
     session_id: Optional[str] = None
     enable_web_search: Optional[bool] = False
+    enable_mcp: Optional[bool] = True  # 默认开启 MCP
     stream: Optional[bool] = False
     model: Optional[str] = None
 
@@ -69,6 +70,7 @@ async def agent_chat(
                     db=db,
                     user=current_user,
                     enable_web_search=enable_web_search,
+                    enable_mcp=request.enable_mcp,
                     model=request.model
                 ),
                 media_type="application/x-ndjson"
@@ -88,6 +90,7 @@ async def agent_chat(
             db=db,
             user=current_user,
             enable_web_search=enable_web_search,
+            enable_mcp=request.enable_mcp,
             model=request.model,
         )
 
@@ -122,12 +125,29 @@ async def get_available_models(
             error=str(e)
         )
 
+def _get_tools_for_request(enable_web_search: bool = False, enable_mcp: bool = True) -> List[Any]:
+    """根据是否启用联网搜索和 MCP 获取可用工具列表"""
+    all_tools = AgentService.get_available_tools()
+    tools = all_tools
+    
+    # 如果未启用联网搜索，过滤掉 search_web
+    if not enable_web_search:
+        tools = [t for t in tools if t.name != "search_web"]
+    
+    # 如果未启用 MCP，过滤掉 MCP 工具
+    if not enable_mcp:
+        tools = [t for t in tools if "mcporter" not in t.name]
+    
+    return tools
+
+
 async def stream_agent_response(
     user_message: str,
     session_id: str,
     db: Session,
     user: User,
     enable_web_search: bool = False,
+    enable_mcp: bool = True,
     model: Optional[str] = None
 ) -> AsyncGenerator[str, None]:
     """流式响应智能体消息"""
@@ -158,6 +178,9 @@ async def stream_agent_response(
             "timestamp": int(time.time() * 1000)
         }) + "\n"
         
+        # 根据 enable_web_search 获取可用工具
+        available_tools = _get_tools_for_request(enable_web_search, enable_mcp)
+        
         # 迭代式工具调用与回复生成循环
         formatted_results: List[str] = []
         while True:
@@ -166,7 +189,7 @@ async def stream_agent_response(
             probe = await llm_client.chat_completion(
                 messages=messages,
                 model=model,
-                tools=AgentService.get_available_tools(),
+                tools=available_tools,
                 tool_choice="auto"
             )
             assistant_message = probe.get("choices", [{}])[0].get("message", {})
@@ -179,7 +202,7 @@ async def stream_agent_response(
                 async for delta in llm_client.chat_completion_stream(
                     messages=messages,
                     model=model,
-                    tools=AgentService.get_available_tools(),
+                    tools=available_tools,
                     tool_choice="auto",
                 ):
                     aggregated += delta

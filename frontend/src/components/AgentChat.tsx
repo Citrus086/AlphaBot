@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Loader2, Send, Bot, User, TrendingUp, BarChart2, PieChart, LineChart, Plus, Trash2, MessageSquare, Copy, Search, Globe } from 'lucide-react';
+import { Loader2, Send, Bot, User, TrendingUp, BarChart2, PieChart, LineChart, Plus, Trash2, MessageSquare, Copy, Search, Globe, Puzzle } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { chatWithAgent, chatWithAgentStream, getAgentSessions, getAgentSessionHistory, deleteAgentSession, searchWeb, executeAgentTool, getSearchConfig } from '@/lib/api';
 import { getAvailableModels, getAgentTools } from '@/lib/api';
@@ -494,6 +494,7 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
         content: input,
         session_id: currentSession || undefined,
         enable_web_search: webSearchEnabled,
+        enable_mcp: mcpEnabled,
         model: model || undefined
       },
       (message) => {
@@ -582,6 +583,7 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
       content: input,
       session_id: currentSession || undefined,
       enable_web_search: webSearchEnabled,
+      enable_mcp: mcpEnabled,
       model: model || undefined
     });
     
@@ -1036,7 +1038,29 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
               </Button>
             </div>
             
-            {/* MCP 状态 */}
+            {/* MCP 开关 */}
+            <div className="flex items-center">
+              <Button
+                variant={mcpEnabled ? "primary" : "outline"}
+                size="sm"
+                className={`gap-1 ${mcpServers.length === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
+                disabled={mcpServers.length === 0}
+                onClick={() => setMcpEnabled(!mcpEnabled)}
+                title={
+                  mcpServers.length === 0 
+                    ? "MCP 未配置" 
+                    : mcpEnabled 
+                      ? "关闭 MCP (将使用传统搜索引擎)" 
+                      : "开启 MCP (使用 MCP 搜索工具)"
+                }
+              >
+                <Puzzle className="h-4 w-4" />
+                <span className="text-xs">MCP</span>
+                <span className={`ml-1 h-2 w-2 rounded-full ${mcpEnabled ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+              </Button>
+            </div>
+            
+            {/* MCP 状态详情 */}
             <McpStatus servers={mcpServers} enabled={mcpEnabled} />
           </div>
         </div>

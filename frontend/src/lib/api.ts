@@ -953,6 +953,7 @@ export async function chatWithAgent(data: {
   content: string;
   session_id?: string;
   enable_web_search?: boolean;
+  enable_mcp?: boolean;
   stream?: boolean;
   model?: string;
 }): Promise<ApiResponse<any>> {
@@ -992,6 +993,7 @@ export async function chatWithAgentStream(
     content: string;
     session_id?: string;
     enable_web_search?: boolean;
+    enable_mcp?: boolean;
     model?: string;
   },
   onMessage: (message: any) => void

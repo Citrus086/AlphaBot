@@ -43,22 +43,23 @@ class SearchService:
         # 记录初始化信息
         logger.info(f"搜索服务初始化: 引擎={self.search_engine}, 已启用={self.is_enabled}")
         
-    async def search(self, query: str, limit: int = 5) -> Dict[str, Any]:
+    async def search(self, query: str, limit: int = 5, enable_mcp: bool = True) -> Dict[str, Any]:
         """统一搜索接口
         
-        优先使用 MCP 搜索工具（如果可用），否则回退到传统搜索引擎
+        优先使用 MCP 搜索工具（如果启用且可用），否则回退到传统搜索引擎
         
         Args:
             query: 搜索查询
             limit: 结果数量限制
+            enable_mcp: 是否启用 MCP 搜索（默认 True）
             
         Returns:
             包含搜索结果的字典
         """
-        logger.info(f"搜索查询: {query}")
+        logger.info(f"搜索查询: {query}, enable_mcp={enable_mcp}")
         
-        # 1. 首先尝试使用 MCP 搜索（优先）
-        if HAS_MCP_SEARCH and mcp_search_adapter:
+        # 1. 首先尝试使用 MCP 搜索（如果启用且可用）
+        if enable_mcp and HAS_MCP_SEARCH and mcp_search_adapter:
             try:
                 mcp_result = await mcp_search_adapter.search(query, limit)
                 if mcp_result and mcp_result.get("success"):
