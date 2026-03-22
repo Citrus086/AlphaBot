@@ -10,6 +10,7 @@ import { chatWithAgent, chatWithAgentStream, getAgentSessions, getAgentSessionHi
 import { getAvailableModels, getAgentTools } from '@/lib/api';
 import McpStatus from './McpStatus';
 import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import { ScrollArea } from './ui/scroll-area';
 import { format } from 'date-fns';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -132,6 +133,18 @@ const AgentMessage = ({ message, isUser }: AgentMessageProps) => {
     }
   }
   
+  // 处理 <think> 标签 - 模型思考过程
+  // 将 <think>...</think> 转换为可折叠的思考块
+  cleanedMessage = cleanedMessage.replace(
+    /<think>([\s\S]*?)<\/think>/g,
+    '<details><summary>💭 思考过程</summary>\n\n$1\n</details>'
+  );
+  // 处理未闭合的 <think> 标签
+  cleanedMessage = cleanedMessage.replace(
+    /<think>([\s\S]*?)$/g,
+    '<details><summary>💭 思考过程</summary>\n\n$1\n</details>'
+  );
+  
   const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   
   return (
@@ -140,6 +153,7 @@ const AgentMessage = ({ message, isUser }: AgentMessageProps) => {
         isUser ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
       }`}>
         <ReactMarkdown 
+          rehypePlugins={[rehypeRaw]}
           components={{
             code: ({ className, children, ...props }: any) => {
               const match = /language-(\w+)/.exec(className || '');
