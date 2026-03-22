@@ -82,7 +82,7 @@ class Settings(BaseSettings):
     # 模型格式：provider/model_name，如 openai/gpt-4o-mini、deepseek/deepseek-chat
     LLM_MODEL: str = os.getenv("LLM_MODEL", "openai/gpt-4o-mini")
     LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
-    LLM_API_BASE: str = os.getenv("LLM_API_BASE", "https://api.openai.com/v1")
+    LLM_API_BASE: str = os.getenv("LLM_API_BASE", "")  # 空值让 LiteLLM 根据 provider 前缀自动选择
     LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "1000"))
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
     # 逗号分隔的可用模型列表，供前端/API 切换

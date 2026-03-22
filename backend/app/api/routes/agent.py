@@ -310,6 +310,10 @@ async def get_agent_tools(
             if not McpHostRegistry._initialized:
                 McpHostRegistry.load_from_file()
             
+            # 如果还没有发现工具，则异步发现
+            if not McpHostRegistry._tools:
+                await McpHostRegistry.discover_tools()
+            
             # 获取所有已发现的工具
             all_mcp_tools = McpHostRegistry.list_tools()
             
@@ -339,6 +343,8 @@ async def get_agent_tools(
                 })
         except Exception as mcp_error:
             # MCP 信息获取失败不影响主功能
+            import logging
+            logging.getLogger(__name__).error(f"MCP 信息获取失败: {mcp_error}")
             pass
             
         return api_response(data={

@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Loader2, Send, Bot, User, TrendingUp, BarChart2, PieChart, LineChart, Plus, Trash2, MessageSquare, Copy, Search, Globe } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { chatWithAgent, chatWithAgentStream, getAgentSessions, getAgentSessionHistory, deleteAgentSession, searchWeb, executeAgentTool } from '@/lib/api';
+import { chatWithAgent, chatWithAgentStream, getAgentSessions, getAgentSessionHistory, deleteAgentSession, searchWeb, executeAgentTool, getSearchConfig } from '@/lib/api';
 import { getAvailableModels, getAgentTools } from '@/lib/api';
 import McpStatus from './McpStatus';
 import ReactMarkdown from 'react-markdown';
@@ -205,6 +205,13 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
   // MCP 状态
   const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
   const [mcpEnabled, setMcpEnabled] = useState<boolean>(false);
+  
+  // 搜索配置状态
+  const [searchConfig, setSearchConfig] = useState<{enabled: boolean, engine: string, points_required: number}>({
+    enabled: false,
+    engine: '',
+    points_required: 1000
+  });
 
   useEffect(() => {
     (async () => {
@@ -353,13 +360,15 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
       return;
     }
     
-    // 如果是使用/search命令，检查积分
+    // 如果是使用/search命令，检查搜索是否可用
     if (input.trim().startsWith('/search') && !canUseWebSearch) {
-      // 积分不足，直接显示错误信息，不展示思考状态
-      const insufficientPointsMessage: Message = {
+      // 搜索不可用，直接显示错误信息，不展示思考状态
+      const errorMessage: Message = {
         id: generateId(),
         role: 'assistant',
-        content: '您的积分不足，需要2000积分才能使用联网搜索功能',
+        content: !searchConfig.enabled 
+          ? '搜索API未启用，请联系管理员配置搜索引擎API'
+          : '请先登录后再使用联网搜索功能',
         timestamp: new Date()
       };
       
@@ -372,20 +381,22 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
           content: input,
           timestamp: new Date()
         },
-        insufficientPointsMessage
+        errorMessage
       ]);
       
       setInput('');
       return;
     }
     
-    // 如果启用联网搜索，先检查积分
+    // 如果启用联网搜索，先检查是否可用
     if (webSearchEnabled && !canUseWebSearch) {
-      // 积分不足，直接显示错误信息，不展示思考状态
-      const insufficientPointsMessage: Message = {
+      // 搜索不可用，直接显示错误信息，不展示思考状态
+      const errorMessage: Message = {
         id: generateId(),
         role: 'assistant',
-        content: '您的积分不足，需要2000积分才能使用联网搜索功能',
+        content: !searchConfig.enabled 
+          ? '搜索API未启用，请联系管理员配置搜索引擎API'
+          : '请先登录后再使用联网搜索功能',
         timestamp: new Date()
       };
       
@@ -398,7 +409,7 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
           content: input,
           timestamp: new Date()
         },
-        insufficientPointsMessage
+        errorMessage
       ]);
       
       setInput('');
@@ -844,13 +855,15 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
   const handleSearch = () => {
     if (!input.trim() || isLoading) return;
     
-    // 先检查积分是否足够
+    // 先检查搜索是否可用
     if (!canUseWebSearch) {
-      // 积分不足，直接显示错误信息，不展示思考状态
-      const insufficientPointsMessage: Message = {
+      // 搜索不可用，直接显示错误信息，不展示思考状态
+      const errorMessage: Message = {
         id: generateId(),
         role: 'assistant',
-        content: '您的积分不足，需要2000积分才能使用联网搜索功能',
+        content: !searchConfig.enabled 
+          ? '搜索API未启用，请联系管理员配置搜索引擎API'
+          : '请先登录后再使用联网搜索功能',
         timestamp: new Date()
       };
       
@@ -863,7 +876,7 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
           content: input,
           timestamp: new Date()
         },
-        insufficientPointsMessage
+        errorMessage
       ]);
       
       setInput('');
@@ -880,13 +893,31 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
     setTimeout(() => handleSendMessage(), 0);
   };
 
-  // 检查用户是否有足够积分使用联网搜索
-  const canUseWebSearch = user && user.points >= 2000;
+  // 加载搜索配置
+  useEffect(() => {
+    (async () => {
+      try {
+        const config = await getSearchConfig();
+        if (config) {
+          setSearchConfig(config);
+        }
+      } catch (error) {
+        console.error('获取搜索配置失败:', error);
+      }
+    })();
+  }, []);
+
+  // 检查用户是否可以使用联网搜索（已移除积分限制，仅需登录 + 搜索API启用）
+  const canUseWebSearch = !!user && searchConfig.enabled;
 
   // 切换联网搜索状态
   const toggleWebSearch = () => {
     if (!canUseWebSearch) {
-      alert('您的积分不足，需要2000积分才能使用联网搜索功能');
+      if (!searchConfig.enabled) {
+        alert('搜索API未启用，请检查环境变量 SEARCH_API_ENABLED 和搜索引擎API Key');
+      } else if (!user) {
+        alert('请先登录');
+      }
       return;
     }
     setWebSearchEnabled(!webSearchEnabled);
@@ -976,7 +1007,13 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
                 className={`gap-1 ${!canUseWebSearch ? 'opacity-60 cursor-not-allowed' : ''}`}
                 disabled={!canUseWebSearch}
                 onClick={toggleWebSearch}
-                title={canUseWebSearch ? "开启/关闭联网搜索" : "需要2000积分才能使用联网搜索"}
+                title={
+                  !searchConfig.enabled 
+                    ? "搜索API未启用，请检查环境变量配置" 
+                    : !user
+                      ? "请先登录"
+                      : "开启/关闭联网搜索"
+                }
               >
                 <Globe className="h-4 w-4" />
                 <span className="text-xs">联网搜索</span>

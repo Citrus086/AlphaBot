@@ -1162,6 +1162,24 @@ export async function getAgentTools(): Promise<ApiResponse<any>> {
 }
 
 /**
+ * 获取搜索配置
+ * @returns 搜索配置信息
+ */
+export const getSearchConfig = async () => {
+  try {
+    const response = await api.get('/search/config');
+    return response.data;
+  } catch (error) {
+    console.error("获取搜索配置出错:", error);
+    return {
+      enabled: false,
+      engine: '',
+      points_required: 1000
+    };
+  }
+};
+
+/**
  * 执行Web搜索
  * @param query 搜索查询
  * @param limit 结果数量限制

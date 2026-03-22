@@ -5,6 +5,14 @@ from app.core.config import settings
 from app.middleware.logging import logger
 from datetime import datetime
 
+# 导入 MCP 搜索适配器
+try:
+    from app.services.mcp_search_adapter import mcp_search_adapter
+    HAS_MCP_SEARCH = True
+except ImportError:
+    HAS_MCP_SEARCH = False
+    mcp_search_adapter = None
+
 class SearchService:
     """搜索服务，支持多种搜索引擎"""
     
@@ -38,6 +46,8 @@ class SearchService:
     async def search(self, query: str, limit: int = 5) -> Dict[str, Any]:
         """统一搜索接口
         
+        优先使用 MCP 搜索工具（如果可用），否则回退到传统搜索引擎
+        
         Args:
             query: 搜索查询
             limit: 结果数量限制
@@ -45,11 +55,25 @@ class SearchService:
         Returns:
             包含搜索结果的字典
         """
+        logger.info(f"搜索查询: {query}")
+        
+        # 1. 首先尝试使用 MCP 搜索（优先）
+        if HAS_MCP_SEARCH and mcp_search_adapter:
+            try:
+                mcp_result = await mcp_search_adapter.search(query, limit)
+                if mcp_result and mcp_result.get("success"):
+                    logger.info(f"使用 MCP 搜索成功，返回 {mcp_result.get('result_count', 0)} 条结果")
+                    return mcp_result
+            except Exception as e:
+                logger.warning(f"MCP 搜索失败，将回退到传统搜索引擎: {e}")
+        
+        # 2. 如果没有可用的 MCP 搜索或 MCP 搜索失败，使用传统搜索引擎
         if not self.is_enabled:
             logger.warning("搜索API未启用")
             return self._create_error_response("搜索API未启用")
         
-        logger.info(f"使用搜索引擎: {self.search_engine}, 查询: {query}")
+        logger.info(f"使用传统搜索引擎: {self.search_engine}")
+        
         # 选择搜索引擎
         if self.search_engine == "serpapi" and self.search_engines["serpapi"]["enabled"]:
             return await self._search_serpapi(query, limit)

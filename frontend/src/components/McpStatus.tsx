@@ -97,7 +97,7 @@ export function McpStatus({ servers, enabled }: McpStatusProps) {
             </div>
           </div>
 
-          <ScrollArea className="max-h-80">
+          <ScrollArea className="h-80">
             <div className="p-2">
               {servers.length === 0 ? (
                 <div className="text-center py-4 text-sm text-gray-500">
@@ -142,7 +142,8 @@ export function McpStatus({ servers, enabled }: McpStatusProps) {
                               {server.base_url}
                             </div>
                             {server.tools.length > 0 ? (
-                              <div className="space-y-1">
+                              <ScrollArea className="h-48">
+                                <div className="space-y-1 pr-1">
                                 {server.tools.map((tool) => (
                                   <div
                                     key={tool.full_name}
@@ -161,7 +162,8 @@ export function McpStatus({ servers, enabled }: McpStatusProps) {
                                     </div>
                                   </div>
                                 ))}
-                              </div>
+                                </div>
+                              </ScrollArea>
                             ) : (
                               <div className="text-xs text-gray-400 italic">
                                 未发现可用工具

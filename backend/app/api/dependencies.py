@@ -27,7 +27,7 @@ async def check_web_search_limit(
     
     要求:
     1. 系统启用了搜索API
-    2. 用户至少拥有2000积分
+    2. 用户已登录（积分限制已移除，SerpAPI自带100次/月限制）
     """
     # 检查是否启用搜索API
     if not settings.SEARCH_API_ENABLED:
@@ -36,11 +36,7 @@ async def check_web_search_limit(
             detail="Search API is not enabled"
         )
     
-    # 检查用户积分是否足够
-    if current_user.points < 2000:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient points, 2000 points required for web search"
-        )
+    # 积分限制已移除 - SerpAPI 自带每月100次免费额度限制
+    # 如需限制使用，请通过 SerpAPI 控制台管理
     
     return current_user 

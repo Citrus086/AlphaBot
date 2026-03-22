@@ -503,6 +503,10 @@ class AgentService:
             # 2.1 为当前角色选择允许使用的工具集合
             all_tools = cls.get_available_tools()
             allowed_tool_names = set(role_cfg.tool_names or [])
+            
+            # 2.1 为当前角色选择允许使用的工具集合
+            all_tools = cls.get_available_tools()
+            allowed_tool_names = set(role_cfg.tool_names or [])
             tools_for_llm = [t for t in all_tools if t.name in allowed_tool_names] or all_tools
 
             # 3. 迭代式工具调用与回复生成循环

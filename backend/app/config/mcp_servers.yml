@@ -14,10 +14,12 @@
 #
 servers: 
   # mcporter-bridge - 本地 MCP 工具桥接
-  # 使用宿主机 IP 让 Docker 容器访问
+  # 使用 host.docker.internal 让 Docker 容器访问宿主机上的 MCP 服务
+  # 注意：host.docker.internal 仅在 Docker Desktop (Mac/Windows) 上可用
+  # Linux 用户需要使用宿主机 IP 或添加 --add-host=host.docker.internal:host-gateway
   # FastMCP 3.x HTTP transport 端点是 /mcp
   - id: mcporter_bridge
-    base_url: http://192.168.0.102:8765/mcp
+    base_url: http://host.docker.internal:8765/mcp
     # api_key: 如果需要认证再填
 
   # 其他 MCP 服务器（可选）

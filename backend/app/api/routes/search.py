@@ -8,6 +8,22 @@ from app.core.config import settings
 from app.middleware.logging import logger
 router = APIRouter()
 
+class SearchConfigResponse(BaseModel):
+    enabled: bool
+    engine: str
+    points_required: int = 1000
+
+@router.get("/config", response_model=SearchConfigResponse)
+async def get_search_config():
+    """
+    获取搜索功能配置状态
+    """
+    return SearchConfigResponse(
+        enabled=settings.SEARCH_API_ENABLED,
+        engine=settings.SEARCH_ENGINE,
+        points_required=1000
+    )
+
 class SearchResponse(BaseModel):
     success: bool
     query: Optional[str] = None
