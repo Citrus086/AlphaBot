@@ -1,4 +1,20 @@
 import React from 'react';
+
+// 预处理 <think> 标签，将模型思考过程转换为可折叠的 HTML
+const preprocessThinkTags = (content: string): string => {
+  if (!content) return content;
+  // 将 <think>...</think> 转换为可折叠的思考块
+  let processed = content.replace(
+    /<think>([\s\S]*?)<\/think>/g,
+    '<details><summary>💭 思考过程</summary>\n\n$1\n</details>'
+  );
+  // 处理未闭合的 <think> 标签
+  processed = processed.replace(
+    /<think>([\s\S]*?)$/g,
+    '<details><summary>💭 思考过程</summary>\n\n$1\n</details>'
+  );
+  return processed;
+};
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -78,7 +94,7 @@ export function AgentMessageDisplay({ message, isLast }: AgentMessageDisplayProp
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeHighlight, rehypeRaw]}
             >
-              {message.content}
+              {preprocessThinkTags(message.content)}
             </ReactMarkdown>
           </div>
         </div>

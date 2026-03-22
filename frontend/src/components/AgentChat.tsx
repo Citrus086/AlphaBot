@@ -11,6 +11,22 @@ import { getAvailableModels, getAgentTools } from '@/lib/api';
 import McpStatus from './McpStatus';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
+
+// 预处理 <think> 标签，将模型思考过程转换为可折叠的 HTML
+const preprocessThinkTags = (content: string): string => {
+  if (!content) return content;
+  // 将 <think>...</think> 转换为可折叠的思考块
+  let processed = content.replace(
+    /<think>([\s\S]*?)<\/think>/g,
+    '<details><summary>💭 思考过程</summary>\n\n$1\n</details>'
+  );
+  // 处理未闭合的 <think> 标签
+  processed = processed.replace(
+    /<think>([\s\S]*?)$/g,
+    '<details><summary>💭 思考过程</summary>\n\n$1\n</details>'
+  );
+  return processed;
+};
 import { ScrollArea } from './ui/scroll-area';
 import { format } from 'date-fns';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -744,7 +760,7 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
             <div className="max-w-[80%]">
               <div className="prose prose-sm max-w-none dark:prose-invert text-gray-400 dark:text-gray-500">
                 <div className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg">
-                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                  <ReactMarkdown rehypePlugins={[rehypeRaw]}>{preprocessThinkTags(message.content)}</ReactMarkdown>
                 </div>
               </div>
             </div>
@@ -768,7 +784,7 @@ export default function AgentChat({ onSelectStock }: AgentChatProps) {
                     </div>
                   )}
                   {message.content && (
-                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                    <ReactMarkdown rehypePlugins={[rehypeRaw]}>{preprocessThinkTags(message.content)}</ReactMarkdown>
                   )}
                   {!message.content && !streamingMessage && (
                     <div className="text-sm text-gray-500 dark:text-gray-400 italic">
