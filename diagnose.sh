@@ -25,7 +25,7 @@ fi
 # 2. 检查容器状态
 echo ""
 echo "2. 检查容器状态..."
-cd /Users/mima0000/alphabet
+cd "$(dirname "$0")"
 docker-compose ps
 
 # 3. 检查端口占用

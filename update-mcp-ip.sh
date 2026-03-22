@@ -11,8 +11,9 @@ fi
 
 echo "🔄 检测到当前 IP: $CURRENT_IP"
 
-# 更新 mcp_servers.yml
-MCP_CONFIG="/Users/mima0000/alphabot/backend/app/config/mcp_servers.yml"
+# 获取脚本所在目录（项目根目录）
+PROJECT_DIR="$(dirname "$0")"
+MCP_CONFIG="$PROJECT_DIR/backend/app/config/mcp_servers.yml"
 
 if [ -f "$MCP_CONFIG" ]; then
     # 备份原配置
@@ -31,7 +32,7 @@ if [ -f "$MCP_CONFIG" ]; then
     # 重启后端服务
     echo ""
     echo "🔄 正在重启 AlphaBot 后端..."
-    cd /Users/mima0000/alphabot
+    cd "$PROJECT_DIR"
     docker-compose restart backend
     
     echo ""

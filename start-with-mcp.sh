@@ -9,8 +9,10 @@ echo "=========================="
 # 配置
 MCP_PORT=8765
 MCP_PID_FILE="/tmp/mcporter-bridge.pid"
-PROJECT_DIR="/Users/mima0000/alphabot"
-MCP_DIR="/Users/mima0000/mcporter-bridge"
+# 获取脚本所在目录（项目根目录）
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# MCP Bridge 目录（默认与项目目录同级，可通过环境变量覆盖）
+MCP_DIR="${MCP_DIR:-$(dirname "$PROJECT_DIR")/mcporter-bridge}"
 
 # 从 .env 读取端口配置（默认值与 docker-compose.yml 一致）
 eval $(grep -E "^(BACKEND_PORT|FRONTEND_PORT|REDIS_PORT)=" "$PROJECT_DIR/.env" 2>/dev/null)

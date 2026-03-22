@@ -2,7 +2,7 @@
 # AlphaBot 一键停止脚本
 
 echo "🛑 正在停止 AlphaBot..."
-cd /Users/mima0000/alphabot
+cd "$(dirname "$0")"
 docker-compose down
 
 if [ $? -eq 0 ]; then

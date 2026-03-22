@@ -2,7 +2,7 @@
 # AlphaBot 一键启动脚本
 
 echo "🚀 正在启动 AlphaBot..."
-cd /Users/mima0000/alphabot
+cd "$(dirname "$0")"
 
 # 检查 Docker
 docker-compose up -d
